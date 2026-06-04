@@ -1,0 +1,63 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Catppuccin Frappé - dark warm. Accent: Mauve. Focus: Lavender. -->
+
+    <Color x:Key="CtpCrustColor">#FF232634</Color>
+    <Color x:Key="CtpMantleColor">#FF292C3C</Color>
+    <Color x:Key="CtpBaseColor">#FF303446</Color>
+    <Color x:Key="CtpSurface0Color">#FF414559</Color>
+    <Color x:Key="CtpSurface1Color">#FF51576D</Color>
+    <Color x:Key="CtpSurface2Color">#FF626880</Color>
+    <Color x:Key="CtpOverlay0Color">#FF737994</Color>
+    <Color x:Key="CtpOverlay1Color">#FF838BA7</Color>
+    <Color x:Key="CtpOverlay2Color">#FF949CBB</Color>
+    <Color x:Key="CtpSubtext0Color">#FFA5ADCE</Color>
+    <Color x:Key="CtpSubtext1Color">#FFB5BFE2</Color>
+    <Color x:Key="CtpTextColor">#FFC6D0F5</Color>
+    <Color x:Key="CtpLavenderColor">#FFBABBF1</Color>
+    <Color x:Key="CtpBlueColor">#FF8CAAEE</Color>
+    <Color x:Key="CtpMauveColor">#FFCA9EE6</Color>
+    <Color x:Key="CtpRedColor">#FFE78284</Color>
+    <Color x:Key="CtpGreenColor">#FFA6D189</Color>
+    <Color x:Key="CtpYellowColor">#FFE5C890</Color>
+    <Color x:Key="CtpPeachColor">#FFEF9F76</Color>
+    <Color x:Key="CtpTealColor">#FF81C8BE</Color>
+
+    <SolidColorBrush x:Key="CtpCrust"     Color="{StaticResource CtpCrustColor}"/>
+    <SolidColorBrush x:Key="CtpMantle"    Color="{StaticResource CtpMantleColor}"/>
+    <SolidColorBrush x:Key="CtpBase"      Color="{StaticResource CtpBaseColor}"/>
+    <SolidColorBrush x:Key="CtpSurface0"  Color="{StaticResource CtpSurface0Color}"/>
+    <SolidColorBrush x:Key="CtpSurface1"  Color="{StaticResource CtpSurface1Color}"/>
+    <SolidColorBrush x:Key="CtpSurface2"  Color="{StaticResource CtpSurface2Color}"/>
+    <SolidColorBrush x:Key="CtpOverlay0"  Color="{StaticResource CtpOverlay0Color}"/>
+    <SolidColorBrush x:Key="CtpOverlay1"  Color="{StaticResource CtpOverlay1Color}"/>
+    <SolidColorBrush x:Key="CtpOverlay2"  Color="{StaticResource CtpOverlay2Color}"/>
+    <SolidColorBrush x:Key="CtpSubtext0"  Color="{StaticResource CtpSubtext0Color}"/>
+    <SolidColorBrush x:Key="CtpSubtext1"  Color="{StaticResource CtpSubtext1Color}"/>
+    <SolidColorBrush x:Key="CtpText"      Color="{StaticResource CtpTextColor}"/>
+    <SolidColorBrush x:Key="CtpLavender"  Color="{StaticResource CtpLavenderColor}"/>
+    <SolidColorBrush x:Key="CtpBlue"      Color="{StaticResource CtpBlueColor}"/>
+    <SolidColorBrush x:Key="CtpMauve"     Color="{StaticResource CtpMauveColor}"/>
+    <SolidColorBrush x:Key="CtpRed"       Color="{StaticResource CtpRedColor}"/>
+    <SolidColorBrush x:Key="CtpGreen"     Color="{StaticResource CtpGreenColor}"/>
+    <SolidColorBrush x:Key="CtpYellow"    Color="{StaticResource CtpYellowColor}"/>
+    <SolidColorBrush x:Key="CtpPeach"     Color="{StaticResource CtpPeachColor}"/>
+    <SolidColorBrush x:Key="CtpTeal"      Color="{StaticResource CtpTealColor}"/>
+
+    <SolidColorBrush x:Key="CtpAccent"           Color="{StaticResource CtpMauveColor}"/>
+    <SolidColorBrush x:Key="CtpAccentForeground" Color="{StaticResource CtpBaseColor}"/>
+    <SolidColorBrush x:Key="CtpFocus"            Color="{StaticResource CtpLavenderColor}"/>
+    <SolidColorBrush x:Key="CtpSelectionBg"      Color="{StaticResource CtpLavenderColor}"/>
+    <SolidColorBrush x:Key="CtpSelectionFg"      Color="{StaticResource CtpBaseColor}"/>
+
+    <SolidColorBrush x:Key="WindowBackground"    Color="{StaticResource CtpBaseColor}"/>
+    <SolidColorBrush x:Key="WindowForeground"    Color="{StaticResource CtpTextColor}"/>
+
+    <FontFamily x:Key="UiFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <sys:Double x:Key="UiFontSize">13</sys:Double>
+
+    <sys:Boolean x:Key="CtpIsDark">True</sys:Boolean>
+
+</ResourceDictionary>

@@ -1,0 +1,65 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Catppuccin Latte - light flavor.  Accent: Blue.  Focus: Lavender. -->
+    <!-- On Latte the lightness order INVERTS: Base brightest, Crust darkest of bg set. -->
+
+    <Color x:Key="CtpCrustColor">#FFDCE0E8</Color>
+    <Color x:Key="CtpMantleColor">#FFE6E9EF</Color>
+    <Color x:Key="CtpBaseColor">#FFEFF1F5</Color>
+    <Color x:Key="CtpSurface0Color">#FFCCD0DA</Color>
+    <Color x:Key="CtpSurface1Color">#FFBCC0CC</Color>
+    <Color x:Key="CtpSurface2Color">#FFACB0BE</Color>
+    <Color x:Key="CtpOverlay0Color">#FF9CA0B0</Color>
+    <Color x:Key="CtpOverlay1Color">#FF8C8FA1</Color>
+    <Color x:Key="CtpOverlay2Color">#FF7C7F93</Color>
+    <Color x:Key="CtpSubtext0Color">#FF6C6F85</Color>
+    <Color x:Key="CtpSubtext1Color">#FF5C5F77</Color>
+    <Color x:Key="CtpTextColor">#FF4C4F69</Color>
+    <Color x:Key="CtpLavenderColor">#FF7287FD</Color>
+    <Color x:Key="CtpBlueColor">#FF1E66F5</Color>
+    <Color x:Key="CtpMauveColor">#FF8839EF</Color>
+    <Color x:Key="CtpRedColor">#FFD20F39</Color>
+    <Color x:Key="CtpGreenColor">#FF40A02B</Color>
+    <Color x:Key="CtpYellowColor">#FFDF8E1D</Color>
+    <Color x:Key="CtpPeachColor">#FFFE640B</Color>
+    <Color x:Key="CtpTealColor">#FF179299</Color>
+
+    <SolidColorBrush x:Key="CtpCrust"     Color="{StaticResource CtpCrustColor}"/>
+    <SolidColorBrush x:Key="CtpMantle"    Color="{StaticResource CtpMantleColor}"/>
+    <SolidColorBrush x:Key="CtpBase"      Color="{StaticResource CtpBaseColor}"/>
+    <SolidColorBrush x:Key="CtpSurface0"  Color="{StaticResource CtpSurface0Color}"/>
+    <SolidColorBrush x:Key="CtpSurface1"  Color="{StaticResource CtpSurface1Color}"/>
+    <SolidColorBrush x:Key="CtpSurface2"  Color="{StaticResource CtpSurface2Color}"/>
+    <SolidColorBrush x:Key="CtpOverlay0"  Color="{StaticResource CtpOverlay0Color}"/>
+    <SolidColorBrush x:Key="CtpOverlay1"  Color="{StaticResource CtpOverlay1Color}"/>
+    <SolidColorBrush x:Key="CtpOverlay2"  Color="{StaticResource CtpOverlay2Color}"/>
+    <SolidColorBrush x:Key="CtpSubtext0"  Color="{StaticResource CtpSubtext0Color}"/>
+    <SolidColorBrush x:Key="CtpSubtext1"  Color="{StaticResource CtpSubtext1Color}"/>
+    <SolidColorBrush x:Key="CtpText"      Color="{StaticResource CtpTextColor}"/>
+    <SolidColorBrush x:Key="CtpLavender"  Color="{StaticResource CtpLavenderColor}"/>
+    <SolidColorBrush x:Key="CtpBlue"      Color="{StaticResource CtpBlueColor}"/>
+    <SolidColorBrush x:Key="CtpMauve"     Color="{StaticResource CtpMauveColor}"/>
+    <SolidColorBrush x:Key="CtpRed"       Color="{StaticResource CtpRedColor}"/>
+    <SolidColorBrush x:Key="CtpGreen"     Color="{StaticResource CtpGreenColor}"/>
+    <SolidColorBrush x:Key="CtpYellow"    Color="{StaticResource CtpYellowColor}"/>
+    <SolidColorBrush x:Key="CtpPeach"     Color="{StaticResource CtpPeachColor}"/>
+    <SolidColorBrush x:Key="CtpTeal"      Color="{StaticResource CtpTealColor}"/>
+
+    <!-- Latte default accent: Blue (Mauve on Latte is very intense) -->
+    <SolidColorBrush x:Key="CtpAccent"           Color="{StaticResource CtpBlueColor}"/>
+    <SolidColorBrush x:Key="CtpAccentForeground" Color="{StaticResource CtpBaseColor}"/>
+    <SolidColorBrush x:Key="CtpFocus"            Color="{StaticResource CtpLavenderColor}"/>
+    <SolidColorBrush x:Key="CtpSelectionBg"      Color="{StaticResource CtpLavenderColor}"/>
+    <SolidColorBrush x:Key="CtpSelectionFg"      Color="{StaticResource CtpBaseColor}"/>
+
+    <SolidColorBrush x:Key="WindowBackground"    Color="{StaticResource CtpBaseColor}"/>
+    <SolidColorBrush x:Key="WindowForeground"    Color="{StaticResource CtpTextColor}"/>
+
+    <FontFamily x:Key="UiFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <sys:Double x:Key="UiFontSize">13</sys:Double>
+
+    <sys:Boolean x:Key="CtpIsDark">False</sys:Boolean>
+
+</ResourceDictionary>
