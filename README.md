@@ -5,9 +5,9 @@ live preview, source editing with completion + validation, and runtime theming
 across the four [Catppuccin](https://github.com/catppuccin/catppuccin) flavors.
 Built with WPF + .NET 8, packaged as MSIX.
 
-```
-![md-browser screenshot](screenshot.png)
-```
+
+![Application screenshot](screenshot.png)
+
 
 ## Contents
 
