@@ -6,25 +6,7 @@ across the four [Catppuccin](https://github.com/catppuccin/catppuccin) flavors.
 Built with WPF + .NET 8, packaged as MSIX.
 
 ```
-+------------------------------------------------------------+
-| Markdown Viewer   [Open folder...] [Refresh] [Save]   v  |
-+------------+-----------------------------------------------+
-| EXPLORER   |  HTML preview (WebView2)                      |
-|            |  - Headings, tables, code, images, links      |
-|  > docs/   |  - Re-rendered live as you edit               |
-|    intro.md|                                                |
-|    api.md  +-----------------------------------------------+
-|  > spec/   |  SOURCE   ./docs/intro.md . UTF-8       o mod|
-|            |  +--------------------------------------------+
-|            |  | # Welcome                                  |
-|            |  |                                            |
-|            |  | This is the source. Edit it.               |
-|            |  +--------------------------------------------+
-|            |  ISSUES - 0 error(s), 1 warning(s)            |
-|            |  . Line 12: Fenced code block has no language |
-+------------+-----------------------------------------------+
-| Ready                                  Catppuccin Mocha    |
-+------------------------------------------------------------+
+![md-browser screenshot](screenshot.png)
 ```
 
 ## Contents
@@ -37,6 +19,7 @@ Built with WPF + .NET 8, packaged as MSIX.
   - [Editor shortcuts and completion](#editor-shortcuts-and-completion)
   - [Validation rules](#validation-rules)
   - [Encoding handling](#encoding-handling)
+  - [How preview rendering works](#how-preview-rendering-works)
 - [Security model](#security-model)
 - [Packaging as MSIX](#packaging-as-msix)
   - [One-time setup](#one-time-setup)
@@ -52,7 +35,7 @@ Built with WPF + .NET 8, packaged as MSIX.
 | Area | Capabilities |
 |---|---|
 | **Layout** | Two-pane shell (folder tree + content) with a horizontal split inside the content pane (preview on top, source editor below). All splitters draggable. |
-| **Preview** | Markdig pipeline with advanced extensions: tables, task lists, footnotes, autolinks, emoji, generic attributes. Catppuccin-themed HTML matching the active flavor. Live reload on edit (250 ms debounce) and on disk change (when the editor is clean). |
+| **Preview** | Markdig pipeline with advanced extensions: tables, task lists, footnotes, autolinks, emoji, generic attributes. Catppuccin-themed HTML matching the active flavor. Live reload on edit (250 ms debounce) and on disk change (when the editor is clean). Renders relative images (`![](images/foo.png)`) via a WebView2 virtual host, and handles arbitrarily large rendered output (multi-MB base64-image files) by writing the HTML to disk and navigating to it instead of using the size-limited `NavigateToString`. |
 | **Editor** | AvalonEdit-based source pane with Markdown syntax highlighting per flavor, line numbers, word wrap, Ctrl+S save, dirty indicator, encoding display. |
 | **Completion** | Snippet popup triggered by `[`, `!`, `` ``` `` at line start, or Ctrl+Space. Includes 32 fenced-code-block languages, headings, lists, tables, blockquotes, task lists, link/image templates. |
 | **Validation** | Real-time Markdig AST inspection. Surfaces broken relative link/image targets, empty headings, heading-level skips, code fences without a language, and **broken `data:` URIs** (truncated or placeholder-stripped base64 payloads). Double-click any issue to jump the caret to that line. |
@@ -140,6 +123,35 @@ The detected encoding is shown next to the file path in the editor header
 BOM** — a deliberate one-time upgrade for legacy files. The status bar
 confirms this on save.
 
+### How preview rendering works
+
+The preview pane is a WebView2 control with two cooperating virtual hosts —
+both registered at startup via `CoreWebView2.SetVirtualHostNameToFolderMapping`:
+
+| Virtual host | Mapped to | Purpose |
+|---|---|---|
+| `mdbrowser-preview.local` | `%LOCALAPPDATA%\MdBrowser\Preview\` | Where the rendered HTML document lives. On every render, the markdown is converted to HTML, written to `preview.html`, and the WebView2 navigates to `https://mdbrowser-preview.local/preview.html?v=<counter>`. Cache-busting query forces a real reload on theme switch or live edit. |
+| `mdbrowser.local` | the open file's parent directory | Where the *resources* referenced by the markdown live — local images, CSS, fonts. The rendered document's `<base href="https://mdbrowser.local/">` resolves all relative URLs against this folder. Replaced on every file open so it always tracks the currently-open file. |
+
+This indirection is the reason the viewer handles both:
+
+- **Relative images** (`![](images/foo.png)`). Without the source-dir virtual
+  host, WebView2 refuses `file://` reads from an `about:blank` document
+  (cross-origin restriction), so the image silently does not appear.
+- **Huge documents** (multi-MB base64-embedded images). `NavigateToString` is
+  documented to cap around 2 MB and silently hangs past that. Navigating to a
+  file URL has no such limit.
+
+Internal markdown links (e.g. `[See spec](spec.md)`) become
+`https://mdbrowser.local/spec.md` after base-href resolution. The navigation
+handler intercepts that origin and:
+
+- If the target is another markdown file → loads it into the editor (and
+  follows folder changes automatically).
+- If the target is a non-markdown local file (PDF, image, …) → hands it to
+  the OS via `Process.Start`.
+- If the target is missing → shows a status-bar warning.
+
 ## Security model
 
 Markdown files can carry raw HTML, so the rendered document is treated as
@@ -156,10 +168,15 @@ untrusted. Defenses, top to bottom:
    frame-src 'none'; connect-src 'none';
    ```
 4. **External links open in the system browser**, not in the preview pane.
-   `http://`, `https://`, `mailto:` URLs are intercepted in
-   `CoreWebView2.NavigationStarting`, cancelled, and handed to
-   `Process.Start(uri) { UseShellExecute = true }`. `NewWindowRequested` is
-   handled the same way. Unknown protocols are blocked outright.
+   `CoreWebView2.NavigationStarting` classifies every navigation:
+   - `about:` / `data:` / `file:` — allowed (our own welcome screen + WebView2 internals).
+   - `https://mdbrowser-preview.local/…` — allowed (our own rendered preview).
+   - `https://mdbrowser.local/…` — intercepted as an *internal* markdown
+     link, opened in the editor (or handed to the OS for non-md files).
+   - Any other `http://`, `https://`, or `mailto:` — cancelled and handed to
+     `Process.Start(uri) { UseShellExecute = true }`.
+   - Anything else (custom protocols, exotic schemes) — blocked.
+   `NewWindowRequested` is treated the same way.
 5. **No referrer leaks** — `<meta name="referrer" content="no-referrer">` on
    every rendered page.
 
@@ -283,6 +300,9 @@ packaging/
   out/                           Built/signed .msix (gitignored)
 test-fixtures/
   base64-test.md                 Sanity check that real base64 images render
+  relative-images/
+    demo.md                      Sanity check that ![](images/foo.png) works
+    images/sample.png            Small PNG referenced by demo.md
 ```
 
 ## Troubleshooting
@@ -338,6 +358,33 @@ The file is in an encoding the app couldn't auto-detect. Check the encoding
 shown in the editor header — if it says **UTF-8** but you see mojibake, the
 file is probably double-encoded. If it says **Windows-1252** the detection
 worked. Save (Ctrl+S) to normalize to UTF-8.
+
+### Relative images don't appear in the preview
+
+You should see them — local images load through the `mdbrowser.local` virtual
+host (see [How preview rendering works](#how-preview-rendering-works)). If
+they don't:
+
+1. Check the **ISSUES** panel. The validator resolves the same relative
+   paths the renderer does, so if the validator is silent the file is on
+   disk and the path is correct.
+2. Confirm the image path is **relative to the markdown file**, not to your
+   repo root. `![](images/foo.png)` requires `images/foo.png` next to the
+   `.md` file.
+3. If you see them in the preview but not after switching themes, the file
+   may be cached — close and re-open the file.
+
+### App appeared to hang when opening a large markdown file
+
+Before the file-backed-preview change this happened for files larger than ~2 MB
+of rendered HTML (typically multi-MB inline base64 images). It shouldn't
+happen any more — the renderer writes to `%LOCALAPPDATA%\MdBrowser\Preview\preview.html`
+and the WebView2 navigates to that URL instead of using the size-limited
+`NavigateToString`. If you still see freezing on very large files (e.g. 20 MB+
+of base64), the bottleneck is now the editor (AvalonEdit loading megabytes of
+inline payload) plus the 250 ms-debounced re-render on every keystroke. Open
+such files read-only or strip the base64 with `pandoc -t markdown
+--extract-media=./images source.docx` first.
 
 ### Images marked as broken in the validation panel
 

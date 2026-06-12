@@ -40,6 +40,19 @@ public partial class MainWindow : Window
     private string? _pendingHtml;
     private bool _suppressThemeChange;
     private bool _suppressEditorChange;
+    private bool _suppressEditorLayoutChange;
+
+    private EditorPosition _editorPosition = EditorPosition.Bottom;
+    // Remembers the last non-Hidden position so Ctrl+E can restore it.
+    private EditorPosition _lastVisibleEditorPosition = EditorPosition.Bottom;
+
+    // Per-user temp dir mapped to MarkdownRenderer.PreviewVirtualHost.
+    // The preview HTML is written here as a real file so we Navigate(url) instead of
+    // NavigateToString(html) - the latter has a 2 MB limit which breaks files with
+    // many inline base64 images.
+    private string _previewDir = string.Empty;
+    private string _previewFile = string.Empty;
+    private long _previewCounter;
 
     public MainWindow()
     {
@@ -67,6 +80,11 @@ public partial class MainWindow : Window
         ApplyTitleBarForCurrentFlavor();
         ApplyEditorHighlighting(ThemeManager.Current);
 
+        var savedPos = LayoutSettings.LoadOrDefault();
+        if (savedPos != EditorPosition.Hidden) _lastVisibleEditorPosition = savedPos;
+        PopulateEditorLayoutPicker(savedPos);
+        ApplyEditorLayout(savedPos);
+
         ThemeManager.FlavorChanged += OnFlavorChanged;
         App.RemoteFileRequested += OnRemoteFileRequested;
 
@@ -77,6 +95,10 @@ public partial class MainWindow : Window
 
         // Ctrl+S anywhere in the window saves
         InputBindings.Add(new KeyBinding(_vm.SaveCommand, new KeyGesture(Key.S, ModifierKeys.Control)));
+        // Ctrl+E toggles the editor pane (hide <-> last visible position)
+        InputBindings.Add(new KeyBinding(
+            new RelayCommand(_ => ToggleEditorVisibility()),
+            new KeyGesture(Key.E, ModifierKeys.Control)));
 
         await InitializeWebViewAsync();
 
@@ -151,6 +173,155 @@ public partial class MainWindow : Window
         }
     }
 
+    private void PopulateEditorLayoutPicker(EditorPosition current)
+    {
+        _suppressEditorLayoutChange = true;
+        var options = new[]
+        {
+            EditorPosition.Hidden,
+            EditorPosition.Bottom,
+            EditorPosition.Right,
+            EditorPosition.Top,
+            EditorPosition.Left,
+        }.Select(p => new EditorLayoutOption(p, LayoutSettings.DisplayName(p))).ToList();
+
+        EditorLayoutPicker.ItemsSource = options;
+        EditorLayoutPicker.DisplayMemberPath = nameof(EditorLayoutOption.Label);
+        EditorLayoutPicker.SelectedItem = options.FirstOrDefault(o => o.Position == current);
+        _suppressEditorLayoutChange = false;
+    }
+
+    private void EditorLayoutPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressEditorLayoutChange) return;
+        if (EditorLayoutPicker.SelectedItem is EditorLayoutOption opt && opt.Position != _editorPosition)
+        {
+            ApplyEditorLayout(opt.Position);
+        }
+    }
+
+    private void ToggleEditorVisibility()
+    {
+        var next = _editorPosition == EditorPosition.Hidden
+            ? _lastVisibleEditorPosition
+            : EditorPosition.Hidden;
+        // Selecting in the picker triggers SelectionChanged -> ApplyEditorLayout.
+        SelectEditorLayout(next);
+    }
+
+    private void SelectEditorLayout(EditorPosition pos)
+    {
+        if (EditorLayoutPicker.ItemsSource is IEnumerable<EditorLayoutOption> items)
+        {
+            var match = items.FirstOrDefault(o => o.Position == pos);
+            if (match is not null) EditorLayoutPicker.SelectedItem = match;
+        }
+    }
+
+    private void ApplyEditorLayout(EditorPosition pos)
+    {
+        _editorPosition = pos;
+        if (pos != EditorPosition.Hidden) _lastVisibleEditorPosition = pos;
+
+        var grid = PreviewEditorGrid;
+        grid.RowDefinitions.Clear();
+        grid.ColumnDefinitions.Clear();
+
+        // Reset attached props before reassigning.
+        foreach (var el in new System.Windows.FrameworkElement[] { Preview, EditorSplitter, EditorPane })
+        {
+            Grid.SetRow(el, 0);
+            Grid.SetColumn(el, 0);
+            Grid.SetRowSpan(el, 1);
+            Grid.SetColumnSpan(el, 1);
+        }
+
+        EditorSplitter.Visibility = Visibility.Visible;
+        EditorPane.Visibility = Visibility.Visible;
+        // Splitter is a visual separator only - the editor/preview ratio is locked
+        // to 50/50 so the user can't drag it out of balance.
+        EditorSplitter.IsEnabled = false;
+
+        const double minPane = 120;
+        var half = new GridLength(1, GridUnitType.Star);
+
+        switch (pos)
+        {
+            case EditorPosition.Hidden:
+                grid.RowDefinitions.Add(new RowDefinition { Height = half });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = half });
+                EditorSplitter.Visibility = Visibility.Collapsed;
+                EditorPane.Visibility = Visibility.Collapsed;
+                break;
+
+            case EditorPosition.Bottom:
+                grid.RowDefinitions.Add(new RowDefinition { Height = half, MinHeight = minPane });
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                grid.RowDefinitions.Add(new RowDefinition { Height = half, MinHeight = minPane });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = half });
+                Grid.SetRow(Preview, 0);
+                Grid.SetRow(EditorSplitter, 1);
+                Grid.SetRow(EditorPane, 2);
+                ConfigureSplitter(horizontal: true);
+                break;
+
+            case EditorPosition.Top:
+                grid.RowDefinitions.Add(new RowDefinition { Height = half, MinHeight = minPane });
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                grid.RowDefinitions.Add(new RowDefinition { Height = half, MinHeight = minPane });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = half });
+                Grid.SetRow(EditorPane, 0);
+                Grid.SetRow(EditorSplitter, 1);
+                Grid.SetRow(Preview, 2);
+                ConfigureSplitter(horizontal: true);
+                break;
+
+            case EditorPosition.Right:
+                grid.RowDefinitions.Add(new RowDefinition { Height = half });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = half, MinWidth = 200 });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = half, MinWidth = 200 });
+                Grid.SetColumn(Preview, 0);
+                Grid.SetColumn(EditorSplitter, 1);
+                Grid.SetColumn(EditorPane, 2);
+                ConfigureSplitter(horizontal: false);
+                break;
+
+            case EditorPosition.Left:
+                grid.RowDefinitions.Add(new RowDefinition { Height = half });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = half, MinWidth = 200 });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = half, MinWidth = 200 });
+                Grid.SetColumn(EditorPane, 0);
+                Grid.SetColumn(EditorSplitter, 1);
+                Grid.SetColumn(Preview, 2);
+                ConfigureSplitter(horizontal: false);
+                break;
+        }
+
+        LayoutSettings.Save(pos);
+    }
+
+    private void ConfigureSplitter(bool horizontal)
+    {
+        if (horizontal)
+        {
+            EditorSplitter.Height = 1;
+            EditorSplitter.Width = double.NaN;
+            EditorSplitter.HorizontalAlignment = HorizontalAlignment.Stretch;
+            EditorSplitter.VerticalAlignment = VerticalAlignment.Center;
+            EditorSplitter.ResizeDirection = GridResizeDirection.Rows;
+        }
+        else
+        {
+            EditorSplitter.Width = 1;
+            EditorSplitter.Height = double.NaN;
+            EditorSplitter.VerticalAlignment = VerticalAlignment.Stretch;
+            EditorSplitter.HorizontalAlignment = HorizontalAlignment.Center;
+            EditorSplitter.ResizeDirection = GridResizeDirection.Columns;
+        }
+    }
+
     private void OnFlavorChanged(CatppuccinFlavor flavor)
     {
         ApplyTitleBarForCurrentFlavor();
@@ -199,6 +370,18 @@ public partial class MainWindow : Window
             settings.IsWebMessageEnabled = false;
             settings.AreHostObjectsAllowed = false;
 
+            // Preview temp dir + virtual host. We write the rendered HTML here and
+            // Navigate() to its URL rather than NavigateToString'ing a huge string.
+            _previewDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MdBrowser", "Preview");
+            Directory.CreateDirectory(_previewDir);
+            _previewFile = Path.Combine(_previewDir, MarkdownRenderer.PreviewFileName);
+            Preview.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                MarkdownRenderer.PreviewVirtualHost,
+                _previewDir,
+                CoreWebView2HostResourceAccessKind.Allow);
+
             // Intercept external link clicks - open them in the system browser
             // instead of replacing the preview pane.
             Preview.CoreWebView2.NavigationStarting += OnPreviewNavigationStarting;
@@ -220,16 +403,30 @@ public partial class MainWindow : Window
     private void OnPreviewNavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
     {
         var uri = e.Uri ?? string.Empty;
-        // Allow our own NavigateToString loads (those come through as about:blank or data:)
-        // and local file references (relative images via the <base href>).
+        // Allow our own preview loads (file-backed Navigate to mdbrowser-preview.local,
+        // plus the legacy NavigateToString welcome screen).
+        var previewOrigin = $"https://{MarkdownRenderer.PreviewVirtualHost}/";
         if (string.IsNullOrEmpty(uri)
+            || uri.StartsWith(previewOrigin, StringComparison.OrdinalIgnoreCase)
             || uri.StartsWith("about:", StringComparison.OrdinalIgnoreCase)
             || uri.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
             || uri.StartsWith("file:", StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
-        // External: cancel and hand off to the default browser / mail client.
+
+        // Virtual-host links (https://mdbrowser.local/...) are clicks on relative
+        // markdown links inside the rendered preview. Map them back to local files
+        // and open them in the editor (or, for non-md files, hand to the OS).
+        var virtualOrigin = $"https://{MarkdownRenderer.VirtualHost}/";
+        if (uri.StartsWith(virtualOrigin, StringComparison.OrdinalIgnoreCase))
+        {
+            e.Cancel = true;
+            HandleInternalLink(uri, virtualOrigin);
+            return;
+        }
+
+        // Truly external: hand off to the default browser / mail client.
         if (uri.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
             || uri.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
             || uri.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase))
@@ -241,6 +438,49 @@ public partial class MainWindow : Window
         // Anything else (custom protocols etc.) - block.
         e.Cancel = true;
         _vm.StatusText = $"Blocked navigation to {uri}";
+    }
+
+    private void HandleInternalLink(string uri, string virtualOrigin)
+    {
+        if (_currentFile is null) return;
+        var sourceDir = Path.GetDirectoryName(_currentFile);
+        if (string.IsNullOrEmpty(sourceDir)) return;
+
+        // Strip the origin, then trim anchor (#) and query (?)
+        var remainder = uri[virtualOrigin.Length..];
+        var hashIdx = remainder.IndexOf('#');
+        if (hashIdx >= 0) remainder = remainder[..hashIdx];
+        var queryIdx = remainder.IndexOf('?');
+        if (queryIdx >= 0) remainder = remainder[..queryIdx];
+        if (string.IsNullOrEmpty(remainder)) return;
+
+        var relPath = Uri.UnescapeDataString(remainder).Replace('/', Path.DirectorySeparatorChar);
+        string fullPath;
+        try
+        {
+            fullPath = Path.GetFullPath(Path.Combine(sourceDir, relPath));
+        }
+        catch
+        {
+            _vm.StatusText = $"Couldn't resolve internal link: {remainder}";
+            return;
+        }
+
+        if (!File.Exists(fullPath))
+        {
+            _vm.StatusText = $"Internal link target not found: {remainder}";
+            return;
+        }
+
+        if (MainViewModel.IsMarkdownFile(fullPath))
+        {
+            OpenFileExternally(fullPath);
+        }
+        else
+        {
+            // Non-markdown local file (PDF, image, etc.) - let the OS handle it.
+            OpenExternal(fullPath);
+        }
     }
 
     private void OnPreviewNewWindowRequested(object? sender, CoreWebView2NewWindowRequestedEventArgs e)
@@ -268,7 +508,23 @@ public partial class MainWindow : Window
             _pendingHtml = html;
             return;
         }
-        Preview.NavigateToString(html);
+
+        // Write the HTML to a real file and Navigate() to its virtual-host URL.
+        // This sidesteps WebView2's documented 2 MB cap on NavigateToString, which
+        // causes the app to appear to hang when a single .md inlines many large
+        // base64 images.
+        try
+        {
+            File.WriteAllText(_previewFile, html, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            // Bust the WebView2 cache so re-renders (theme switch, live edit) actually reload.
+            var bust = ++_previewCounter;
+            var url = $"https://{MarkdownRenderer.PreviewVirtualHost}/{MarkdownRenderer.PreviewFileName}?v={bust}";
+            Preview.CoreWebView2.Navigate(url);
+        }
+        catch (Exception ex)
+        {
+            _vm.StatusText = $"Preview render failed: {ex.Message}";
+        }
     }
 
     private void ShowWelcome()
@@ -419,10 +675,38 @@ public partial class MainWindow : Window
             truncated = true;
         }
 
+        // Make sure the WebView2 virtual host points at the current file's directory
+        // BEFORE we navigate. Otherwise relative <img> tags resolve against the old
+        // directory (or nothing, on first paint).
+        UpdateVirtualHostMapping();
+
         var html = _renderer.Render(text, _currentFile, ThemeManager.Current);
         NavigateToString(html);
 
         if (_currentFile is not null) UpdateStatusForFile(_currentFile, markdown.Length, truncated);
+    }
+
+    private void UpdateVirtualHostMapping()
+    {
+        if (Preview.CoreWebView2 is null) return;
+        if (_currentFile is null) return;
+        var dir = Path.GetDirectoryName(_currentFile);
+        if (string.IsNullOrEmpty(dir)) return;
+
+        try
+        {
+            // Replacing the mapping with the same hostname overrides the previous one,
+            // so switching files just calls this again. CoreWebView2HostResourceAccessKind.Allow
+            // permits cross-origin loads from our 'about:blank' document.
+            Preview.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                MarkdownRenderer.VirtualHost,
+                dir,
+                CoreWebView2HostResourceAccessKind.Allow);
+        }
+        catch (Exception ex)
+        {
+            _vm.StatusText = $"Virtual host mapping failed: {ex.Message}";
+        }
     }
 
     private void UpdateStatusForFile(string path, int length, bool truncated = false)
@@ -577,4 +861,5 @@ public partial class MainWindow : Window
     }
 
     private sealed record ThemeOption(CatppuccinFlavor Flavor, string Label);
+    private sealed record EditorLayoutOption(EditorPosition Position, string Label);
 }

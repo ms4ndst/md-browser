@@ -65,12 +65,22 @@
                            TextTrimming="CharacterEllipsis"
                            Margin="20,0"/>
 
-                <!-- Filter toggle + theme picker -->
+                <!-- Filter toggle + editor layout + theme picker -->
                 <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                     <CheckBox Content="Markdown only"
                               IsChecked="{Binding MarkdownOnly, Mode=TwoWay}"
                               VerticalAlignment="Center"
                               Margin="0,0,16,0"/>
+                    <TextBlock Text="Editor:"
+                               Foreground="{DynamicResource CtpSubtext0}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,6,0"/>
+                    <ComboBox x:Name="EditorLayoutPicker"
+                              SelectionChanged="EditorLayoutPicker_SelectionChanged"
+                              VerticalAlignment="Center"
+                              Width="100"
+                              Margin="0,0,16,0"
+                              ToolTip="Move or hide the editor pane (Ctrl+E to toggle)"/>
                     <TextBlock Text="Theme:"
                                Foreground="{DynamicResource CtpSubtext0}"
                                VerticalAlignment="Center"
@@ -157,29 +167,20 @@
                           VerticalAlignment="Stretch"
                           ResizeBehavior="PreviousAndNext"/>
 
-            <!-- Right pane: Preview (top) + Editor (bottom) -->
-            <Grid Grid.Column="2" Background="{DynamicResource CtpBase}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*" MinHeight="120"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="2*" MinHeight="120"/>
-                </Grid.RowDefinitions>
+            <!-- Right pane: Preview + Editor. Row/Column setup is driven by code-behind
+                 (ApplyEditorLayout) so the editor can be docked to any side or hidden. -->
+            <Grid x:Name="PreviewEditorGrid" Grid.Column="2" Background="{DynamicResource CtpBase}">
 
                 <!-- Preview -->
-                <wv2:WebView2 Grid.Row="0"
-                              x:Name="Preview"
+                <wv2:WebView2 x:Name="Preview"
                               DefaultBackgroundColor="#1E1E2E"/>
 
-                <!-- Horizontal splitter -->
-                <GridSplitter Grid.Row="1"
-                              Height="1"
-                              HorizontalAlignment="Stretch"
-                              VerticalAlignment="Center"
-                              ResizeDirection="Rows"
+                <!-- Splitter between preview and editor -->
+                <GridSplitter x:Name="EditorSplitter"
                               ResizeBehavior="PreviousAndNext"/>
 
                 <!-- Editor area -->
-                <DockPanel Grid.Row="2" Background="{DynamicResource CtpBase}">
+                <DockPanel x:Name="EditorPane" Background="{DynamicResource CtpBase}">
 
                     <!-- Editor header bar -->
                     <Border DockPanel.Dock="Top"

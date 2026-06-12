@@ -7,6 +7,24 @@ namespace MdBrowser.Services;
 
 public sealed class MarkdownRenderer
 {
+    /// <summary>
+    /// Virtual host that resolves to the *source* file's directory.
+    /// Used as the base href so relative resources (images, css, fonts) in the
+    /// markdown work without us inlining them.
+    /// </summary>
+    public const string VirtualHost = "mdbrowser.local";
+
+    /// <summary>
+    /// Virtual host that resolves to a per-user temp directory where the rendered
+    /// preview HTML is written before we Navigate() to it.
+    /// Bypasses WebView2's 2 MB NavigateToString limit for files with many inline
+    /// base64 images.
+    /// </summary>
+    public const string PreviewVirtualHost = "mdbrowser-preview.local";
+
+    /// <summary>Stable file name used for every rendered preview.</summary>
+    public const string PreviewFileName = "preview.html";
+
     private readonly MarkdownPipeline _pipeline;
 
     public MarkdownRenderer()
@@ -26,14 +44,13 @@ public sealed class MarkdownRenderer
     public string Render(string markdown, string? sourceFilePath, CatppuccinFlavor flavor)
     {
         var html = Markdown.ToHtml(markdown ?? string.Empty, _pipeline);
-        var dir = !string.IsNullOrEmpty(sourceFilePath) && File.Exists(sourceFilePath)
-            ? Path.GetDirectoryName(sourceFilePath)!
-            : Environment.CurrentDirectory;
-        var baseUri = new Uri(dir.EndsWith(Path.DirectorySeparatorChar.ToString())
-            ? dir
-            : dir + Path.DirectorySeparatorChar);
+        // Relative resources resolve against the virtual host when a source file is set,
+        // otherwise against about:blank (no relative resources to load anyway).
+        var baseHref = !string.IsNullOrEmpty(sourceFilePath)
+            ? $"https://{VirtualHost}/"
+            : "about:blank";
 
-        return BuildDocument(html, baseUri, sourceFilePath, flavor);
+        return BuildDocument(html, baseHref, sourceFilePath, flavor);
     }
 
     public string RenderEmpty(string title, string subtitle, CatppuccinFlavor flavor)
@@ -47,7 +64,7 @@ public sealed class MarkdownRenderer
               <p>{safeSubtitle}</p>
             </div>
             """;
-        return BuildDocument(body, new Uri("about:blank"), null, flavor);
+        return BuildDocument(body, "about:blank", null, flavor);
     }
 
     private static HtmlPalette PaletteFor(CatppuccinFlavor f) => f switch
@@ -94,10 +111,10 @@ public sealed class MarkdownRenderer
         }
     };
 
-    private static string BuildDocument(string innerHtml, Uri baseUri, string? sourceFilePath, CatppuccinFlavor flavor)
+    private static string BuildDocument(string innerHtml, string baseHrefRaw, string? sourceFilePath, CatppuccinFlavor flavor)
     {
         var p = PaletteFor(flavor);
-        var baseHref = WebUtility.HtmlEncode(baseUri.AbsoluteUri);
+        var baseHref = WebUtility.HtmlEncode(baseHrefRaw);
         var titleSrc = sourceFilePath is null ? "Markdown Viewer" : Path.GetFileName(sourceFilePath);
         var safeTitle = WebUtility.HtmlEncode(titleSrc);
 

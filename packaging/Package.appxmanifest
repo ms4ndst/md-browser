@@ -7,7 +7,7 @@
 
   <Identity Name="MdBrowser.MarkdownViewer"
             Publisher="CN=MdBrowser Dev, O=MdBrowser, C=SE"
-            Version="1.0.0.0"
+            Version="1.2.1.0"
             ProcessorArchitecture="x64" />
 
   <Properties>
