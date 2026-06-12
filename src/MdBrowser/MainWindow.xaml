@@ -216,6 +216,90 @@
                         </Grid>
                     </Border>
 
+                    <!-- Markdown formatting toolbar -->
+                    <Border DockPanel.Dock="Top"
+                            Background="{DynamicResource CtpMantle}"
+                            BorderBrush="{DynamicResource CtpSurface0}"
+                            BorderThickness="0,1,0,0"
+                            Padding="6,4">
+                        <WrapPanel x:Name="EditorToolbar"
+                                   IsEnabled="{Binding ElementName=Editor, Path=IsEnabled}">
+                            <!-- Headings -->
+                            <Button Style="{StaticResource ToolbarButton}" Padding="6,2" MinWidth="32" Margin="0,0,2,2"
+                                    Click="MdBtn_Heading1_Click" ToolTip="Heading 1">
+                                <TextBlock Text="H1" FontWeight="SemiBold"/>
+                            </Button>
+                            <Button Style="{StaticResource ToolbarButton}" Padding="6,2" MinWidth="32" Margin="0,0,2,2"
+                                    Click="MdBtn_Heading2_Click" ToolTip="Heading 2">
+                                <TextBlock Text="H2" FontWeight="SemiBold"/>
+                            </Button>
+                            <Button Style="{StaticResource ToolbarButton}" Padding="6,2" MinWidth="32" Margin="0,0,10,2"
+                                    Click="MdBtn_Heading3_Click" ToolTip="Heading 3">
+                                <TextBlock Text="H3" FontWeight="SemiBold"/>
+                            </Button>
+
+                            <!-- Inline formatting -->
+                            <Button Style="{StaticResource ToolbarButton}" Padding="8,2" MinWidth="28" Margin="0,0,2,2"
+                                    Click="MdBtn_Bold_Click" ToolTip="Bold (Ctrl+B)">
+                                <TextBlock Text="B" FontWeight="Bold"/>
+                            </Button>
+                            <Button Style="{StaticResource ToolbarButton}" Padding="8,2" MinWidth="28" Margin="0,0,2,2"
+                                    Click="MdBtn_Italic_Click" ToolTip="Italic (Ctrl+I)">
+                                <TextBlock Text="I" FontStyle="Italic"/>
+                            </Button>
+                            <Button Style="{StaticResource ToolbarButton}" Padding="8,2" MinWidth="28" Margin="0,0,2,2"
+                                    Click="MdBtn_Strike_Click" ToolTip="Strikethrough">
+                                <TextBlock Text="S" TextDecorations="Strikethrough"/>
+                            </Button>
+                            <Button Style="{StaticResource ToolbarButton}" Padding="6,2" MinWidth="32" Margin="0,0,10,2"
+                                    Click="MdBtn_InlineCode_Click" ToolTip="Inline code">
+                                <TextBlock Text="&lt;/&gt;" FontFamily="Cascadia Code, Consolas"/>
+                            </Button>
+
+                            <!-- Links / images -->
+                            <Button Style="{StaticResource ToolbarButton}" Padding="8,2" Margin="0,0,2,2"
+                                    Click="MdBtn_Link_Click" ToolTip="Insert link (Ctrl+K)">
+                                <TextBlock Text="Link"/>
+                            </Button>
+                            <Button Style="{StaticResource ToolbarButton}" Padding="8,2" Margin="0,0,10,2"
+                                    Click="MdBtn_Image_Click" ToolTip="Insert image…">
+                                <TextBlock Text="Image"/>
+                            </Button>
+
+                            <!-- Lists -->
+                            <Button Style="{StaticResource ToolbarButton}" Padding="6,2" Margin="0,0,2,2"
+                                    Click="MdBtn_BulletList_Click" ToolTip="Bullet list">
+                                <TextBlock Text="• List"/>
+                            </Button>
+                            <Button Style="{StaticResource ToolbarButton}" Padding="6,2" Margin="0,0,2,2"
+                                    Click="MdBtn_NumberedList_Click" ToolTip="Numbered list">
+                                <TextBlock Text="1. List"/>
+                            </Button>
+                            <Button Style="{StaticResource ToolbarButton}" Padding="6,2" Margin="0,0,10,2"
+                                    Click="MdBtn_TaskList_Click" ToolTip="Task list">
+                                <TextBlock Text="☐ Task"/>
+                            </Button>
+
+                            <!-- Blocks -->
+                            <Button Style="{StaticResource ToolbarButton}" Padding="6,2" Margin="0,0,2,2"
+                                    Click="MdBtn_Quote_Click" ToolTip="Block quote">
+                                <TextBlock Text="❝ Quote"/>
+                            </Button>
+                            <Button Style="{StaticResource ToolbarButton}" Padding="6,2" Margin="0,0,2,2"
+                                    Click="MdBtn_CodeBlock_Click" ToolTip="Fenced code block">
+                                <TextBlock Text="{} Code"/>
+                            </Button>
+                            <Button Style="{StaticResource ToolbarButton}" Padding="6,2" Margin="0,0,2,2"
+                                    Click="MdBtn_Table_Click" ToolTip="Insert table">
+                                <TextBlock Text="▦ Table"/>
+                            </Button>
+                            <Button Style="{StaticResource ToolbarButton}" Padding="6,2" Margin="0,0,2,2"
+                                    Click="MdBtn_HorizontalRule_Click" ToolTip="Horizontal rule">
+                                <TextBlock Text="— HR"/>
+                            </Button>
+                        </WrapPanel>
+                    </Border>
+
                     <!-- Issues panel (bottom) -->
                     <Border DockPanel.Dock="Bottom"
                             Background="{DynamicResource CtpMantle}"

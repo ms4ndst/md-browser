@@ -38,6 +38,14 @@ $stagingDir = Join-Path $OutputDirectory 'staging'
 $manifest   = Join-Path $PSScriptRoot 'Package.appxmanifest'
 $msixPath   = Join-Path $OutputDirectory 'MdBrowser.msix'
 
+# Resolve the PFX to an absolute path up front. signtool's "Store IsDiskFile() failed"
+# (0x80070003) is the symptom when this path is relative and doesn't resolve from the
+# current shell location.
+if (-not (Test-Path $PfxPath)) {
+    throw "PFX not found at '$PfxPath'. Provide an absolute path or one that resolves from your current directory ($(Get-Location))."
+}
+$PfxPath = (Resolve-Path $PfxPath).Path
+
 if (-not (Test-Path $OutputDirectory)) { New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null }
 if (Test-Path $stagingDir) { Remove-Item -Recurse -Force $stagingDir }
 New-Item -ItemType Directory -Force -Path $stagingDir | Out-Null
@@ -93,8 +101,13 @@ $signtool = Find-SdkTool 'signtool'
 Write-Host "[3/4] makeappx pack ..." -ForegroundColor Cyan
 & $makeappx pack /d $stagingDir /p $msixPath /overwrite
 if ($LASTEXITCODE -ne 0) { throw "makeappx failed" }
+if (-not (Test-Path $msixPath)) {
+    throw "makeappx reported success but no MSIX was written at '$msixPath'."
+}
 
 Write-Host "[4/4] signtool sign ..." -ForegroundColor Cyan
+Write-Host "  Cert : $PfxPath"
+Write-Host "  Pkg  : $msixPath"
 $plainPw = [System.Net.NetworkCredential]::new('', $PfxPassword).Password
 & $signtool sign /fd SHA256 /f $PfxPath /p $plainPw $msixPath
 if ($LASTEXITCODE -ne 0) { throw "signtool sign failed" }

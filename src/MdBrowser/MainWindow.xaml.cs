@@ -860,6 +860,243 @@ public partial class MainWindow : Window
         Editor.Focus();
     }
 
+    // ============== Markdown formatting toolbar ==============
+
+    private void MdBtn_Heading1_Click(object sender, RoutedEventArgs e) => SetCurrentLineHeading(1);
+    private void MdBtn_Heading2_Click(object sender, RoutedEventArgs e) => SetCurrentLineHeading(2);
+    private void MdBtn_Heading3_Click(object sender, RoutedEventArgs e) => SetCurrentLineHeading(3);
+    private void MdBtn_Bold_Click(object sender, RoutedEventArgs e) => WrapSelection("**", "**", "bold text");
+    private void MdBtn_Italic_Click(object sender, RoutedEventArgs e) => WrapSelection("*", "*", "italic text");
+    private void MdBtn_Strike_Click(object sender, RoutedEventArgs e) => WrapSelection("~~", "~~", "strikethrough");
+    private void MdBtn_InlineCode_Click(object sender, RoutedEventArgs e) => WrapSelection("`", "`", "code");
+    private void MdBtn_Link_Click(object sender, RoutedEventArgs e) => InsertLink();
+    private void MdBtn_Image_Click(object sender, RoutedEventArgs e) => InsertImage();
+    private void MdBtn_BulletList_Click(object sender, RoutedEventArgs e) => PrefixSelectedLines("- ");
+    private void MdBtn_NumberedList_Click(object sender, RoutedEventArgs e) => NumberSelectedLines();
+    private void MdBtn_TaskList_Click(object sender, RoutedEventArgs e) => PrefixSelectedLines("- [ ] ");
+    private void MdBtn_Quote_Click(object sender, RoutedEventArgs e) => PrefixSelectedLines("> ");
+    private void MdBtn_CodeBlock_Click(object sender, RoutedEventArgs e) => InsertCodeBlock();
+    private void MdBtn_Table_Click(object sender, RoutedEventArgs e) => InsertTable();
+    private void MdBtn_HorizontalRule_Click(object sender, RoutedEventArgs e) => InsertBlock("---");
+
+    private void WrapSelection(string prefix, string suffix, string placeholder)
+    {
+        if (!Editor.IsEnabled) return;
+        var doc = Editor.Document;
+        if (Editor.SelectionLength > 0)
+        {
+            var start = Editor.SelectionStart;
+            var len = Editor.SelectionLength;
+            var text = doc.GetText(start, len);
+            doc.Replace(start, len, prefix + text + suffix);
+            Editor.Select(start + prefix.Length, len);
+        }
+        else
+        {
+            var caret = Editor.CaretOffset;
+            doc.Insert(caret, prefix + placeholder + suffix);
+            Editor.Select(caret + prefix.Length, placeholder.Length);
+        }
+        Editor.Focus();
+    }
+
+    private void SetCurrentLineHeading(int level)
+    {
+        if (!Editor.IsEnabled) return;
+        var doc = Editor.Document;
+        var line = doc.GetLineByOffset(Editor.CaretOffset);
+        var lineText = doc.GetText(line);
+        // Strip any existing leading '#' run + one optional space - acts as a toggle/replace.
+        var trimmed = lineText.TrimStart('#');
+        if (trimmed.StartsWith(' ')) trimmed = trimmed[1..];
+        var prefix = new string('#', level) + " ";
+        doc.Replace(line.Offset, line.Length, prefix + trimmed);
+        Editor.CaretOffset = line.Offset + prefix.Length + trimmed.Length;
+        Editor.Focus();
+    }
+
+    private void PrefixSelectedLines(string prefix)
+    {
+        if (!Editor.IsEnabled) return;
+        var doc = Editor.Document;
+        var (startLine, endLine) = GetSelectedLineRange();
+        using (doc.RunUpdate())
+        {
+            for (int i = startLine; i <= endLine; i++)
+            {
+                var line = doc.GetLineByNumber(i);
+                doc.Insert(line.Offset, prefix);
+            }
+        }
+        Editor.Focus();
+    }
+
+    private void NumberSelectedLines()
+    {
+        if (!Editor.IsEnabled) return;
+        var doc = Editor.Document;
+        var (startLine, endLine) = GetSelectedLineRange();
+        using (doc.RunUpdate())
+        {
+            int n = 1;
+            for (int i = startLine; i <= endLine; i++)
+            {
+                var line = doc.GetLineByNumber(i);
+                doc.Insert(line.Offset, $"{n}. ");
+                n++;
+            }
+        }
+        Editor.Focus();
+    }
+
+    private (int startLine, int endLine) GetSelectedLineRange()
+    {
+        var doc = Editor.Document;
+        if (Editor.SelectionLength > 0)
+        {
+            var s = doc.GetLineByOffset(Editor.SelectionStart).LineNumber;
+            var e = doc.GetLineByOffset(Editor.SelectionStart + Editor.SelectionLength).LineNumber;
+            return (s, e);
+        }
+        var current = doc.GetLineByOffset(Editor.CaretOffset).LineNumber;
+        return (current, current);
+    }
+
+    private void InsertLink()
+    {
+        if (!Editor.IsEnabled) return;
+        var doc = Editor.Document;
+        var selText = Editor.SelectedText ?? string.Empty;
+        var selectionLooksLikeUrl =
+            selText.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            selText.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+
+        string textPart, urlPart;
+        if (selectionLooksLikeUrl) { textPart = "link text"; urlPart = selText; }
+        else if (!string.IsNullOrEmpty(selText)) { textPart = selText; urlPart = "https://"; }
+        else { textPart = "link text"; urlPart = "https://"; }
+
+        var snippet = $"[{textPart}]({urlPart})";
+        int insertAt;
+        if (Editor.SelectionLength > 0)
+        {
+            insertAt = Editor.SelectionStart;
+            doc.Replace(insertAt, Editor.SelectionLength, snippet);
+        }
+        else
+        {
+            insertAt = Editor.CaretOffset;
+            doc.Insert(insertAt, snippet);
+        }
+
+        // Select whichever part the user is most likely to edit next.
+        if (selectionLooksLikeUrl)
+        {
+            Editor.Select(insertAt + 1, textPart.Length); // text part
+        }
+        else if (!string.IsNullOrEmpty(selText))
+        {
+            var urlStart = insertAt + 1 + textPart.Length + 2; // skip "[text]("
+            Editor.Select(urlStart, urlPart.Length);
+        }
+        else
+        {
+            Editor.Select(insertAt + 1, textPart.Length);
+        }
+        Editor.Focus();
+    }
+
+    private void InsertImage()
+    {
+        if (!Editor.IsEnabled) return;
+        var dlg = new OpenFileDialog
+        {
+            Title = "Insert image",
+            Filter = "Image files|*.png;*.jpg;*.jpeg;*.gif;*.webp;*.svg;*.bmp|All files|*.*",
+            Multiselect = false
+        };
+        if (_currentFile is not null)
+        {
+            var dir = Path.GetDirectoryName(_currentFile);
+            if (!string.IsNullOrEmpty(dir)) dlg.InitialDirectory = dir;
+        }
+        if (dlg.ShowDialog(this) != true) return;
+        var picked = dlg.FileName;
+
+        // Prefer a path relative to the current markdown file so the link survives a move.
+        string href = picked;
+        var srcDir = _currentFile is not null ? Path.GetDirectoryName(_currentFile) : null;
+        if (!string.IsNullOrEmpty(srcDir))
+        {
+            try
+            {
+                href = Path.GetRelativePath(srcDir, picked).Replace(Path.DirectorySeparatorChar, '/');
+            }
+            catch { /* fall back to the absolute path */ }
+        }
+
+        var alt = Path.GetFileNameWithoutExtension(picked);
+        var snippet = $"![{alt}]({href})";
+
+        int insertAt = Editor.CaretOffset;
+        if (Editor.SelectionLength > 0)
+        {
+            insertAt = Editor.SelectionStart;
+            Editor.Document.Replace(insertAt, Editor.SelectionLength, snippet);
+        }
+        else
+        {
+            Editor.Document.Insert(insertAt, snippet);
+        }
+        Editor.Select(insertAt + 2, alt.Length); // pre-select the alt text for quick edit
+        Editor.Focus();
+    }
+
+    private void InsertCodeBlock()
+    {
+        // Cursor lands on the empty line inside the fence.
+        InsertBlock("```\n\n```", caretOffsetWithinBlock: 4);
+    }
+
+    private void InsertTable()
+    {
+        var table =
+            "| Column 1 | Column 2 | Column 3 |\n" +
+            "|----------|----------|----------|\n" +
+            "| Cell     | Cell     | Cell     |";
+        InsertBlock(table);
+    }
+
+    /// <summary>
+    /// Insert a multi-line block at the caret. If the caret's line is empty the block
+    /// replaces it; otherwise the block is appended after the current line with blank
+    /// lines around it so it parses as its own markdown block.
+    /// </summary>
+    private void InsertBlock(string text, int? caretOffsetWithinBlock = null)
+    {
+        if (!Editor.IsEnabled) return;
+        var doc = Editor.Document;
+        var caret = Editor.CaretOffset;
+        var line = doc.GetLineByOffset(caret);
+        var lineText = doc.GetText(line);
+        var lineIsEmpty = string.IsNullOrWhiteSpace(lineText);
+
+        int finalCaret;
+        if (lineIsEmpty)
+        {
+            doc.Replace(line.Offset, line.Length, text);
+            finalCaret = line.Offset + (caretOffsetWithinBlock ?? text.Length);
+        }
+        else
+        {
+            var inserted = "\n\n" + text + "\n";
+            doc.Insert(line.EndOffset, inserted);
+            finalCaret = line.EndOffset + 2 + (caretOffsetWithinBlock ?? text.Length);
+        }
+        Editor.CaretOffset = Math.Min(finalCaret, doc.TextLength);
+        Editor.Focus();
+    }
+
     private sealed record ThemeOption(CatppuccinFlavor Flavor, string Label);
     private sealed record EditorLayoutOption(EditorPosition Position, string Label);
 }
