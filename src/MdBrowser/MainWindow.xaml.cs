@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using Markdig;
+using Markdig.Extensions.Yaml;
 using MdBrowser.Services;
 using MdBrowser.ViewModels;
 using Microsoft.Web.WebView2.Core;
@@ -24,8 +25,12 @@ public partial class MainWindow : Window
     private readonly MarkdownRenderer _renderer = new();
 
     // Markdig pipeline reused by the validator so behaviour matches the preview.
+    // YAML front-matter is parsed as its own block so it doesn't get mis-interpreted
+    // as a Setext heading - that mis-parse silently broke heading-based rules on
+    // Hugo content files.
     private readonly MarkdownPipeline _validatorPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
+        .UseYamlFrontMatter()
         .UsePreciseSourceLocation()
         .Build();
 
@@ -821,7 +826,24 @@ public partial class MainWindow : Window
 
     private void RunValidation(string markdown)
     {
-        var issues = MarkdownValidator.Validate(markdown, _currentFile, _validatorPipeline);
+        IReadOnlyList<ValidationIssue> issues;
+        try
+        {
+            issues = MarkdownValidator.Validate(markdown, _currentFile, _validatorPipeline);
+        }
+        catch (Exception ex)
+        {
+            // The debounced TextChanged timer would otherwise swallow this and leave
+            // the issues panel frozen with stale data. Surface it instead.
+            _vm.StatusText = $"Validator crashed: {ex.Message}";
+            var crash = new[] {
+                new ValidationIssue(1, 1, IssueSeverity.Error, $"Validator crashed: {ex.Message}")
+            };
+            IssuesList.ItemsSource = crash;
+            _vm.IssuesSummary = "ISSUES — validator error";
+            return;
+        }
+
         IssuesList.ItemsSource = issues;
         if (issues.Count == 0)
         {
