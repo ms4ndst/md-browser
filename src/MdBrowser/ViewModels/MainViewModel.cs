@@ -20,15 +20,18 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public MainViewModel()
     {
         OpenFolderCommand = new RelayCommand(_ => RequestOpenFolder?.Invoke());
+        NewFileCommand = new RelayCommand(_ => RequestNewFile?.Invoke());
         RefreshCommand = new RelayCommand(_ => RequestRefresh?.Invoke(), _ => !string.IsNullOrEmpty(RootPath));
         SaveCommand = new RelayCommand(_ => RequestSave?.Invoke(), _ => IsDirty);
     }
 
     public ICommand OpenFolderCommand { get; }
+    public ICommand NewFileCommand { get; }
     public ICommand RefreshCommand { get; }
     public ICommand SaveCommand { get; }
 
     public Action? RequestOpenFolder { get; set; }
+    public Action? RequestNewFile { get; set; }
     public Action? RequestRefresh { get; set; }
     public Action? RequestSave { get; set; }
 

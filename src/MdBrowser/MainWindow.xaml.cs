@@ -64,6 +64,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = _vm;
         _vm.RequestOpenFolder = OpenFolderDialog;
+        _vm.RequestNewFile = CreateNewFile;
         _vm.RequestRefresh = RefreshCurrent;
         _vm.RequestSave = SaveCurrent;
         _vm.PropertyChanged += (_, e) =>
@@ -100,6 +101,8 @@ public partial class MainWindow : Window
 
         // Ctrl+S anywhere in the window saves
         InputBindings.Add(new KeyBinding(_vm.SaveCommand, new KeyGesture(Key.S, ModifierKeys.Control)));
+        // Ctrl+N creates a new markdown file
+        InputBindings.Add(new KeyBinding(_vm.NewFileCommand, new KeyGesture(Key.N, ModifierKeys.Control)));
         // Ctrl+E toggles the editor pane (hide <-> last visible position)
         InputBindings.Add(new KeyBinding(
             new RelayCommand(_ => ToggleEditorVisibility()),
@@ -553,6 +556,57 @@ public partial class MainWindow : Window
             _vm.LoadRoot(dlg.FolderName);
             AttachWatcher(dlg.FolderName);
         }
+    }
+
+    private void CreateNewFile()
+    {
+        if (_vm.IsDirty)
+        {
+            var answer = MessageBox.Show(
+                this,
+                $"'{Path.GetFileName(_currentFile)}' has unsaved changes. Discard them and create a new file?",
+                "Unsaved changes",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (answer != MessageBoxResult.Yes) return;
+        }
+
+        var dlg = new SaveFileDialog
+        {
+            Title = "Create a new Markdown file",
+            Filter = "Markdown files|*.md;*.markdown;*.mdown;*.mkd;*.mkdn|All files|*.*",
+            DefaultExt = ".md",
+            FileName = "Untitled.md",
+            OverwritePrompt = true,
+            InitialDirectory = !string.IsNullOrEmpty(_vm.RootPath) && Directory.Exists(_vm.RootPath)
+                ? _vm.RootPath
+                : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+        };
+        if (dlg.ShowDialog(this) != true) return;
+
+        try
+        {
+            TextFileIO.WriteUtf8NoBom(dlg.FileName, string.Empty);
+        }
+        catch (Exception ex)
+        {
+            _vm.StatusText = $"Couldn't create file: {ex.Message}";
+            return;
+        }
+
+        // OpenFileExternally only reloads the tree when the new file's folder differs
+        // from the currently open root. If it's inside the current root (same folder or
+        // a subfolder), refresh explicitly so the new file actually shows up in the tree.
+        var newFileDir = Path.GetDirectoryName(dlg.FileName);
+        if (!string.IsNullOrEmpty(_vm.RootPath) && !string.IsNullOrEmpty(newFileDir) &&
+            (string.Equals(_vm.RootPath, newFileDir, StringComparison.OrdinalIgnoreCase) ||
+             newFileDir.StartsWith(_vm.RootPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)))
+        {
+            _vm.LoadRoot(_vm.RootPath);
+        }
+
+        OpenFileExternally(dlg.FileName);
+        _vm.StatusText = $"Created {Path.GetFileName(dlg.FileName)}";
     }
 
     private void AttachWatcher(string root)

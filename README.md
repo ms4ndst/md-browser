@@ -36,7 +36,7 @@ Built with WPF + .NET 8, packaged as MSIX.
 |---|---|
 | **Layout** | Two-pane shell (folder tree + content) with a horizontal split inside the content pane (preview on top, source editor below). All splitters draggable. |
 | **Preview** | Markdig pipeline with advanced extensions: tables, task lists, footnotes, autolinks, emoji, generic attributes. Catppuccin-themed HTML matching the active flavor. Live reload on edit (250 ms debounce) and on disk change (when the editor is clean). Renders relative images (`![](images/foo.png)`) via a WebView2 virtual host, and handles arbitrarily large rendered output (multi-MB base64-image files) by writing the HTML to disk and navigating to it instead of using the size-limited `NavigateToString`. |
-| **Editor** | AvalonEdit-based source pane with Markdown syntax highlighting per flavor, line numbers, word wrap, Ctrl+S save, dirty indicator, encoding display. |
+| **Editor** | AvalonEdit-based source pane with Markdown syntax highlighting per flavor, line numbers, word wrap, Ctrl+S save, Ctrl+N to create a new Markdown file, dirty indicator, encoding display. |
 | **Completion** | Snippet popup triggered by `[`, `!`, `` ``` `` at line start, or Ctrl+Space. Includes 32 fenced-code-block languages, headings, lists, tables, blockquotes, task lists, link/image templates. |
 | **Validation** | Real-time Markdig AST inspection. Surfaces broken relative link/image targets, empty headings, heading-level skips, code fences without a language, and **broken `data:` URIs** (truncated or placeholder-stripped base64 payloads). Double-click any issue to jump the caret to that line. |
 | **Themes** | Four runtime-switchable flavors: Mocha (default), Macchiato, Frappé, Latte. Choice persists across launches. Dark/light DWM title bar adapts. WebView2 preview and editor highlighting both follow. |
@@ -87,6 +87,7 @@ file to reset to default (Mocha).
 | Trigger | Action |
 |---|---|
 | **Ctrl+S** | Save the editor to disk (UTF-8 without BOM). Toolbar button does the same. |
+| **Ctrl+N** | Create a new Markdown file: pick a name/location, an empty file is written to disk, added to the tree (or opens a new root folder if the target is outside the currently open folder), and loaded into the editor. Toolbar "New file…" button does the same. Prompts if the current file has unsaved changes. |
 | **Ctrl+Space** | Open the full snippet popup (32 fenced-code-block languages plus headings, lists, tables, links, images, blockquotes, hr, task items). |
 | **`[`** | Suggest link and image templates. |
 | **`!`** | Suggest image templates. |

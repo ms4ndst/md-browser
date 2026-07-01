@@ -47,6 +47,11 @@
                             Style="{StaticResource AccentButton}"
                             Margin="0,0,8,0"
                             Command="{Binding OpenFolderCommand}"/>
+                    <Button Content="New file…"
+                            Style="{StaticResource ToolbarButton}"
+                            Margin="0,0,8,0"
+                            Command="{Binding NewFileCommand}"
+                            ToolTip="Create a new Markdown file (Ctrl+N)"/>
                     <Button Content="Refresh"
                             Style="{StaticResource ToolbarButton}"
                             Command="{Binding RefreshCommand}"/>
