@@ -50,6 +50,7 @@ Built with WPF + .NET 8, packaged as MSIX.
 | **Layout** | Two-pane shell (folder tree + content) with a horizontal split inside the content pane (preview on top, source editor below). All splitters draggable. |
 | **Preview** | Markdig pipeline with advanced extensions: tables, task lists, footnotes, autolinks, emoji, generic attributes. Catppuccin-themed HTML matching the active flavor. Live reload on edit (250 ms debounce) and on disk change (when the editor is clean). Renders relative images (`![](images/foo.png)`) via a WebView2 virtual host, and handles arbitrarily large rendered output (multi-MB base64-image files) by writing the HTML to disk and navigating to it instead of using the size-limited `NavigateToString`. |
 | **Editor** | AvalonEdit-based source pane with Markdown syntax highlighting per flavor, line numbers, word wrap, Ctrl+S save, Ctrl+N to create a new Markdown file, dirty indicator, encoding display. |
+| **Formatting toolbar** | One-click insert/wrap for the full set of supported constructs: headings H1–H6; bold, italic, strikethrough, inline code, underline (`++`), highlight (`==`), superscript (`^`), subscript (`~`); links and images; bullet / numbered / task lists; block quote, fenced code block, table, horizontal rule; and footnotes (auto-numbered reference plus a definition appended to the document). Buttons operate on the selection when there is one, otherwise insert a placeholder. |
 | **Completion** | Snippet popup triggered by `[`, `!`, `` ``` `` at line start, or Ctrl+Space. Includes 32 fenced-code-block languages, headings, lists, tables, blockquotes, task lists, link/image templates. |
 | **Validation** | Real-time Markdig AST inspection. Surfaces broken relative link/image targets, empty headings, heading-level skips, code fences without a language, and **broken `data:` URIs** (truncated or placeholder-stripped base64 payloads). Double-click any issue to jump the caret to that line. |
 | **Themes** | Four runtime-switchable flavors: Mocha (default), Macchiato, Frappé, Latte. Choice persists across launches. Dark/light DWM title bar adapts. WebView2 preview and editor highlighting both follow. |
@@ -561,7 +562,7 @@ white/system and ignores `Background`/`Foreground` setters at the top level.
 
 ## License and attribution
 
-This repository's source is provided as-is for internal use.
+This repository's source is MIT-licensed — see [LICENSE](LICENSE).
 
 - **Catppuccin** color palette and design language is used under the
 

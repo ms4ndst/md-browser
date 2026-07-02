@@ -1,0 +1,27 @@
+<Application x:Class="MdEditor.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:MdEditor.Services"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Flavor dictionary - replaced at runtime by ThemeManager -->
+                <ResourceDictionary Source="Themes/CatppuccinMocha.xaml"/>
+                <!-- Shared control styles - never replaced -->
+                <ResourceDictionary Source="Themes/Controls.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+            <Style TargetType="ToolTip">
+                <Setter Property="Background" Value="{DynamicResource CtpMantle}"/>
+                <Setter Property="Foreground" Value="{DynamicResource CtpText}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource CtpSurface2}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Padding" Value="8,6"/>
+                <Setter Property="FontFamily" Value="{DynamicResource UiFont}"/>
+                <Setter Property="FontSize" Value="{DynamicResource UiFontSize}"/>
+                
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

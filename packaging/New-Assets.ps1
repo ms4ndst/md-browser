@@ -1,13 +1,14 @@
 <#
 .SYNOPSIS
-    Generate placeholder MSIX tile assets and a Windows .ico for MdBrowser.
+    Generate placeholder MSIX tile assets and a Windows .ico for md-editor.
 
 .DESCRIPTION
     Produces a Catppuccin-Mocha-themed set of PNG tiles required by Package.appxmanifest,
     plus a multi-format .ico used as the WPF window/taskbar icon.
 
-    Visual: Mocha Base background (#1E1E2E) with a centered Mauve diamond glyph (#CBA6F7)
-    and a thin Mauve border. Simple, readable, and recognizable in every tile size.
+    Visual: Mocha Base background (#1E1E2E) with a centered Markdown mark - a Mauve
+    rounded-rectangle badge (#CBA6F7) carrying a dark "M" and down arrow, echoing the
+    standard Markdown logo. Readable and recognizable in every tile size.
 
     Outputs:
       packaging/Assets/Square44x44Logo.png      (44 x 44)
@@ -17,7 +18,7 @@
       packaging/Assets/SmallTile.png            (71 x 71)
       packaging/Assets/StoreLogo.png            (50 x 50)
       packaging/Assets/SplashScreen.png         (620 x 300)
-      src/MdBrowser/Assets/MdBrowser.ico        (multi-size: 16, 32, 48, 64, 128, 256)
+      src/md-editor/Assets/md-editor.ico        (multi-size: 16, 32, 48, 64, 128, 256)
 
 .EXAMPLE
     .\packaging\New-Assets.ps1
@@ -31,7 +32,7 @@ Add-Type -AssemblyName System.Drawing
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
 $msixAssets = Join-Path $PSScriptRoot 'Assets'
-$appAssets  = Join-Path $repoRoot 'src\MdBrowser\Assets'
+$appAssets  = Join-Path $repoRoot 'src\md-editor\Assets'
 New-Item -ItemType Directory -Force -Path $msixAssets | Out-Null
 New-Item -ItemType Directory -Force -Path $appAssets  | Out-Null
 
@@ -64,35 +65,88 @@ function New-TileBitmap {
     $g.FillRectangle($brush, $rect)
     $brush.Dispose()
 
-    # Centered diamond glyph (Mauve)
-    $cx = [single]($Width  / 2.0)
-    $cy = [single]($Height / 2.0)
-    $r  = [single]([Math]::Min($Width, $Height) * 0.34)
-    $diamond = [System.Drawing.PointF[]]@(
-        [System.Drawing.PointF]::new($cx,        $cy - $r),
-        [System.Drawing.PointF]::new($cx + $r,   $cy),
-        [System.Drawing.PointF]::new($cx,        $cy + $r),
-        [System.Drawing.PointF]::new($cx - $r,   $cy)
+    # ---- Markdown mark: rounded-rect badge with an "M" and a down arrow ----
+    # Dark glyph on the light Mauve badge for maximum contrast at small sizes.
+    $glyphColor = HexToColor $baseHex
+
+    # Badge geometry (Markdown-logo aspect ~ 1.6 : 1), centered.
+    $badgeW = [single]([Math]::Min($Width, $Height) * 0.82)
+    $badgeH = [single]($badgeW / 1.6)
+    $badgeX = [single](($Width  - $badgeW) / 2.0)
+    $badgeY = [single](($Height - $badgeH) / 2.0)
+    $radius = [single]([Math]::Max(2, $badgeH * 0.18))
+    $d      = [single]($radius * 2)
+
+    # Rounded-rectangle badge path
+    $path = New-Object System.Drawing.Drawing2D.GraphicsPath
+    $path.AddArc($badgeX,                     $badgeY,                     $d, $d, 180, 90)
+    $path.AddArc($badgeX + $badgeW - $d,      $badgeY,                     $d, $d, 270, 90)
+    $path.AddArc($badgeX + $badgeW - $d,      $badgeY + $badgeH - $d,      $d, $d,   0, 90)
+    $path.AddArc($badgeX,                     $badgeY + $badgeH - $d,      $d, $d,  90, 90)
+    $path.CloseFigure()
+
+    $badgeFill = [System.Drawing.SolidBrush]::new((HexToColor $mauveHex))
+    $g.FillPath($badgeFill, $path)
+    $badgeFill.Dispose()
+    $borderW = [single][Math]::Max(1, $badgeH * 0.06)
+    $borderPen = [System.Drawing.Pen]::new((HexToColor $lavHex), $borderW)
+    $g.DrawPath($borderPen, $path)
+    $borderPen.Dispose()
+    $path.Dispose()
+
+    # Content box inside the badge
+    $insetX = [single]($badgeW * 0.16)
+    $insetY = [single]($badgeH * 0.24)
+    $cx0 = [single]($badgeX + $insetX)
+    $cx1 = [single]($badgeX + $badgeW - $insetX)
+    $cy0 = [single]($badgeY + $insetY)
+    $cy1 = [single]($badgeY + $badgeH - $insetY)
+    $contentW = [single]($cx1 - $cx0)
+
+    $stroke = [single][Math]::Max([single]1.2, $badgeH * 0.16)
+    $pen = [System.Drawing.Pen]::new($glyphColor, $stroke)
+    $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $pen.EndCap   = [System.Drawing.Drawing2D.LineCap]::Round
+    $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+
+    # "M" occupies the left ~52% of the content box
+    $mx0  = [single]$cx0
+    $mx1  = [single]($cx0 + $contentW * 0.52)
+    $mMid = [single](($mx0 + $mx1) / 2.0)
+    $mDip = [single]($cy0 + ($cy1 - $cy0) * 0.60)
+    $mPts = [System.Drawing.PointF[]]@(
+        [System.Drawing.PointF]::new($mx0,  $cy1),
+        [System.Drawing.PointF]::new($mx0,  $cy0),
+        [System.Drawing.PointF]::new($mMid, $mDip),
+        [System.Drawing.PointF]::new($mx1,  $cy0),
+        [System.Drawing.PointF]::new($mx1,  $cy1)
     )
-    $fill = [System.Drawing.SolidBrush]::new((HexToColor $mauveHex))
-    $g.FillPolygon($fill, $diamond)
-    $fill.Dispose()
+    $g.DrawLines($pen, $mPts)
 
-    # Inner accent line (Lavender) for a subtle highlight
-    $penWidth = [single][Math]::Max(1, [int]($Width / 80))
-    $pen = [System.Drawing.Pen]::new((HexToColor $lavHex), $penWidth)
-    $g.DrawPolygon($pen, $diamond)
+    # Down arrow on the right of the content box
+    $ax    = [single]($cx0 + $contentW * 0.82)
+    $headH = [single](($cy1 - $cy0) * 0.42)
+    $headW = [single]($contentW * 0.16)
+    $g.DrawLine($pen, $ax, $cy0, $ax, [single]($cy1 - $headH * 0.30))
     $pen.Dispose()
+    $head = [System.Drawing.PointF[]]@(
+        [System.Drawing.PointF]::new([single]($ax - $headW), [single]($cy1 - $headH)),
+        [System.Drawing.PointF]::new([single]($ax + $headW), [single]($cy1 - $headH)),
+        [System.Drawing.PointF]::new($ax,                    $cy1)
+    )
+    $headBrush = [System.Drawing.SolidBrush]::new($glyphColor)
+    $g.FillPolygon($headBrush, $head)
+    $headBrush.Dispose()
 
-    # Optional "MD" wordmark on wide/large tiles
-    if ($DrawText -and $Width -ge 220) {
-        $fontSize  = [single][Math]::Max(14, [int]($Height * 0.18))
+    # Optional "Markdown" wordmark on wide/large tiles
+    if ($DrawText -and $Width -ge 300) {
+        $fontSize  = [single][Math]::Max(14, [int]($Height * 0.12))
         $font      = [System.Drawing.Font]::new('Segoe UI Variable', $fontSize, [System.Drawing.FontStyle]::Bold)
         $textBrush = [System.Drawing.SolidBrush]::new((HexToColor '#CDD6F4'))
-        $text      = 'MD'
+        $text      = 'Markdown'
         $size      = $g.MeasureString($text, $font)
-        $x = ($Width  - $size.Width)  / 2
-        $y = $cy + $r + ($Height * 0.04)
+        $x = ($Width - $size.Width) / 2
+        $y = $badgeY + $badgeH + ($Height * 0.04)
         if ($y + $size.Height -lt $Height - 4) {
             $g.DrawString($text, $font, $textBrush, $x, $y)
         }
@@ -165,7 +219,7 @@ foreach ($e in $entries) {
 }
 $bw.Flush()
 
-$icoPath = Join-Path $appAssets 'MdBrowser.ico'
+$icoPath = Join-Path $appAssets 'md-editor.ico'
 [System.IO.File]::WriteAllBytes($icoPath, $icoMs.ToArray())
 $bw.Dispose()
 Write-Host "  wrote $icoPath (sizes: $($iconSizes -join ', '))"

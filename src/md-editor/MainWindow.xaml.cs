@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,12 +13,12 @@ using System.Windows.Threading;
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using Markdig;
 using Markdig.Extensions.Yaml;
-using MdBrowser.Services;
-using MdBrowser.ViewModels;
+using MdEditor.Services;
+using MdEditor.ViewModels;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 
-namespace MdBrowser;
+namespace MdEditor;
 
 public partial class MainWindow : Window
 {
@@ -86,6 +87,7 @@ public partial class MainWindow : Window
         ApplyTitleBarForCurrentFlavor();
         ApplyEditorHighlighting(ThemeManager.Current);
 
+        _vm.ExplorerVisible = LayoutSettings.LoadExplorerVisibleOrDefault();
         var savedPos = LayoutSettings.LoadOrDefault();
         if (savedPos != EditorPosition.Hidden) _lastVisibleEditorPosition = savedPos;
         PopulateEditorLayoutPicker(savedPos);
@@ -362,7 +364,7 @@ public partial class MainWindow : Window
         {
             var userDataFolder = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "MdBrowser",
+                "md-editor",
                 "WebView2");
             Directory.CreateDirectory(userDataFolder);
 
@@ -382,7 +384,7 @@ public partial class MainWindow : Window
             // Navigate() to its URL rather than NavigateToString'ing a huge string.
             _previewDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "MdBrowser", "Preview");
+                "md-editor", "Preview");
             Directory.CreateDirectory(_previewDir);
             _previewFile = Path.Combine(_previewDir, MarkdownRenderer.PreviewFileName);
             Preview.CoreWebView2.SetVirtualHostNameToFolderMapping(
@@ -411,7 +413,7 @@ public partial class MainWindow : Window
     private void OnPreviewNavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
     {
         var uri = e.Uri ?? string.Empty;
-        // Allow our own preview loads (file-backed Navigate to mdbrowser-preview.local,
+        // Allow our own preview loads (file-backed Navigate to md-editor-preview.local,
         // plus the legacy NavigateToString welcome screen).
         var previewOrigin = $"https://{MarkdownRenderer.PreviewVirtualHost}/";
         if (string.IsNullOrEmpty(uri)
@@ -423,7 +425,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Virtual-host links (https://mdbrowser.local/...) are clicks on relative
+        // Virtual-host links (https://md-editor.local/...) are clicks on relative
         // markdown links inside the rendered preview. Map them back to local files
         // and open them in the editor (or, for non-md files, hand to the OS).
         var virtualOrigin = $"https://{MarkdownRenderer.VirtualHost}/";
@@ -941,10 +943,18 @@ public partial class MainWindow : Window
     private void MdBtn_Heading1_Click(object sender, RoutedEventArgs e) => SetCurrentLineHeading(1);
     private void MdBtn_Heading2_Click(object sender, RoutedEventArgs e) => SetCurrentLineHeading(2);
     private void MdBtn_Heading3_Click(object sender, RoutedEventArgs e) => SetCurrentLineHeading(3);
+    private void MdBtn_Heading4_Click(object sender, RoutedEventArgs e) => SetCurrentLineHeading(4);
+    private void MdBtn_Heading5_Click(object sender, RoutedEventArgs e) => SetCurrentLineHeading(5);
+    private void MdBtn_Heading6_Click(object sender, RoutedEventArgs e) => SetCurrentLineHeading(6);
     private void MdBtn_Bold_Click(object sender, RoutedEventArgs e) => WrapSelection("**", "**", "bold text");
     private void MdBtn_Italic_Click(object sender, RoutedEventArgs e) => WrapSelection("*", "*", "italic text");
     private void MdBtn_Strike_Click(object sender, RoutedEventArgs e) => WrapSelection("~~", "~~", "strikethrough");
     private void MdBtn_InlineCode_Click(object sender, RoutedEventArgs e) => WrapSelection("`", "`", "code");
+    private void MdBtn_Underline_Click(object sender, RoutedEventArgs e) => WrapSelection("++", "++", "underline");
+    private void MdBtn_Highlight_Click(object sender, RoutedEventArgs e) => WrapSelection("==", "==", "highlight");
+    private void MdBtn_Superscript_Click(object sender, RoutedEventArgs e) => WrapSelection("^", "^", "sup");
+    private void MdBtn_Subscript_Click(object sender, RoutedEventArgs e) => WrapSelection("~", "~", "sub");
+    private void MdBtn_Footnote_Click(object sender, RoutedEventArgs e) => InsertFootnote();
     private void MdBtn_Link_Click(object sender, RoutedEventArgs e) => InsertLink();
     private void MdBtn_Image_Click(object sender, RoutedEventArgs e) => InsertImage();
     private void MdBtn_BulletList_Click(object sender, RoutedEventArgs e) => PrefixSelectedLines("- ");
@@ -1141,6 +1151,40 @@ public partial class MainWindow : Window
             "|----------|----------|----------|\n" +
             "| Cell     | Cell     | Cell     |";
         InsertBlock(table);
+    }
+
+    /// <summary>
+    /// Insert a footnote: a <c>[^n]</c> reference at the caret plus a matching
+    /// <c>[^n]: </c> definition appended to the end of the document. The footnote
+    /// number is the next unused integer label so repeated inserts don't collide.
+    /// </summary>
+    private void InsertFootnote()
+    {
+        if (!Editor.IsEnabled) return;
+        var doc = Editor.Document;
+
+        // Pick the next free numeric footnote label across existing references/definitions.
+        int next = 1;
+        foreach (Match m in Regex.Matches(doc.Text, @"\[\^(\d+)\]"))
+        {
+            if (int.TryParse(m.Groups[1].Value, out var n) && n >= next) next = n + 1;
+        }
+
+        var reference = $"[^{next}]";
+        var caret = Editor.CaretOffset;
+        doc.Insert(caret, reference);
+
+        // Append the definition at the end of the document, ensuring a blank line before it.
+        var text = doc.Text;
+        var sb = new StringBuilder();
+        if (text.Length > 0 && !text.EndsWith("\n")) sb.Append('\n');
+        if (!text.EndsWith("\n\n")) sb.Append('\n');
+        sb.Append($"[^{next}]: ");
+        int defTextOffset = doc.TextLength + sb.Length; // caret lands after "[^n]: "
+        doc.Insert(doc.TextLength, sb.ToString());
+
+        Editor.CaretOffset = defTextOffset;
+        Editor.Focus();
     }
 
     /// <summary>

@@ -1,33 +1,66 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+
+
   <PropertyGroup>
+
     <OutputType>WinExe</OutputType>
+
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+
     <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+
     <UseWPF>true</UseWPF>
+
     <Nullable>enable</Nullable>
+
     <LangVersion>latest</LangVersion>
+
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>Assets\MdBrowser.ico</ApplicationIcon>
-    <AssemblyName>MdBrowser</AssemblyName>
-    <RootNamespace>MdBrowser</RootNamespace>
-    <Version>1.5.0</Version>
+
+    <ApplicationIcon>Assets\md-editor.ico</ApplicationIcon>
+
+    <AssemblyName>md-editor</AssemblyName>
+
+    <RootNamespace>MdEditor</RootNamespace>
+
+    <Version>1.7.0</Version>
+
     <Platforms>AnyCPU;x64</Platforms>
+
     <PlatformTarget>AnyCPU</PlatformTarget>
+
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Markdig" Version="0.37.0" />
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2592.51" />
-    <PackageReference Include="AvalonEdit" Version="6.3.0.90" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
-  </ItemGroup>
+
 
   <ItemGroup>
-    <Resource Include="Assets\highlight.min.css" Condition="Exists('Assets\highlight.min.css')" />
-    <Resource Include="Assets\highlight.min.js" Condition="Exists('Assets\highlight.min.js')" />
-    <Resource Include="Assets\MdBrowser.ico" Condition="Exists('Assets\MdBrowser.ico')" />
+
+    <PackageReference Include="Markdig" Version="0.37.0" />
+
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2592.51" />
+
+    <PackageReference Include="AvalonEdit" Version="6.3.0.90" />
+
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+
   </ItemGroup>
+
+
+
+  <ItemGroup>
+
+    <Resource Include="Assets\highlight.min.css" Condition="Exists('Assets\highlight.min.css')" />
+
+    <Resource Include="Assets\highlight.min.js" Condition="Exists('Assets\highlight.min.js')" />
+
+    <Resource Include="Assets\md-editor.ico" Condition="Exists('Assets\md-editor.ico')" />
+
+  </ItemGroup>
+
+
 
 </Project>
+

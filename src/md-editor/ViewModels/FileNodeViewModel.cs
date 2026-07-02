@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace MdBrowser.ViewModels;
+namespace MdEditor.ViewModels;
 
 public sealed class FileNodeViewModel : INotifyPropertyChanged
 {
@@ -33,7 +33,7 @@ public sealed class FileNodeViewModel : INotifyPropertyChanged
     public string FullPath { get; }
     public bool IsDirectory { get; }
     public string Name => string.IsNullOrEmpty(FullPath) ? string.Empty : Path.GetFileName(FullPath);
-    public string Icon => IsDirectory ? "" : ""; // Segoe MDL2: Folder / Page
+    public string Icon => IsDirectory ? "" : ""; // Segoe MDL2: Folder / Page
 
     public ObservableCollection<FileNodeViewModel> Children { get; }
 
