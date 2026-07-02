@@ -1,7 +1,7 @@
 using System;
 using System.Windows.Input;
 
-namespace MdBrowser.ViewModels;
+namespace MdEditor.ViewModels;
 
 public sealed class RelayCommand : ICommand
 {

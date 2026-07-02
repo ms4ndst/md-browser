@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 
-namespace MdBrowser.Services;
+namespace MdEditor.Services;
 
 public enum CatppuccinFlavor { Latte, Frappe, Macchiato, Mocha }
 
@@ -11,7 +11,7 @@ public static class ThemeManager
 {
     private static readonly string SettingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "MdBrowser",
+        "md-editor",
         "theme.txt");
 
     public static CatppuccinFlavor Current { get; private set; } = CatppuccinFlavor.Mocha;

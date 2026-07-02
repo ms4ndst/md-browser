@@ -5,7 +5,7 @@ using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
-namespace MdBrowser.Services;
+namespace MdEditor.Services;
 
 public enum IssueSeverity { Info, Warning, Error }
 

@@ -6,13 +6,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace MdBrowser;
+namespace MdEditor;
 
 public partial class App : Application
 {
     // Both names are GUID-suffixed so they don't collide with anything else on the system.
-    private const string MutexName = "Global\\MdBrowser.Singleton.B1A47A1F-7C6E-4F2A-9D7B-7A2C8E1E3F11";
-    private const string PipeName  = "MdBrowser.Pipe.B1A47A1F-7C6E-4F2A-9D7B-7A2C8E1E3F11";
+    private const string MutexName = "Global\\MdEditor.Singleton.B1A47A1F-7C6E-4F2A-9D7B-7A2C8E1E3F11";
+    private const string PipeName  = "MdEditor.Pipe.B1A47A1F-7C6E-4F2A-9D7B-7A2C8E1E3F11";
 
     private Mutex? _singletonMutex;
     private CancellationTokenSource? _pipeCts;

@@ -6,5 +6,5 @@ on it below.
 
 ![relative](images/sample.png)
 
-That image is loaded via the `mdbrowser.local` virtual host. WebView2
+That image is loaded via the `md-editor.local` virtual host. WebView2
 otherwise refuses `file://` reads from `about:blank` documents.

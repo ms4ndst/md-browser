@@ -3,7 +3,7 @@ using System.Xml;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 
-namespace MdBrowser.Services;
+namespace MdEditor.Services;
 
 public static class MarkdownHighlighting
 {

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Create a self-signed code-signing certificate for MSIX packaging of MdBrowser.
+    Create a self-signed code-signing certificate for MSIX packaging of md-editor.
 
 .DESCRIPTION
     Generates a code-signing certificate whose Subject (CN, O, C) matches the
@@ -29,28 +29,28 @@
 
 .EXAMPLE
     # Create with the default publisher
-    .\New-MdBrowserCert.ps1
+    .\New-MdEditorCert.ps1
 
 .EXAMPLE
     # Create with a custom publisher and custom validity
-    .\New-MdBrowserCert.ps1 -Subject 'CN=Acme Corp, O=Acme, C=SE' -ValidityYears 1
+    .\New-MdEditorCert.ps1 -Subject 'CN=Acme Corp, O=Acme, C=SE' -ValidityYears 1
 
 .EXAMPLE
     # Non-interactive: pipe a password in
     $pw = ConvertTo-SecureString 'changeme!' -AsPlainText -Force
-    .\New-MdBrowserCert.ps1 -Password $pw
+    .\New-MdEditorCert.ps1 -Password $pw
 
 .NOTES
     After running, install the .cer into Cert:\LocalMachine\TrustedPeople
     (requires admin) so the signed MSIX trusts on this machine:
 
-        Import-Certificate -FilePath .\certs\MdBrowser.cer `
+        Import-Certificate -FilePath .\certs\md-editor.cer `
             -CertStoreLocation Cert:\LocalMachine\TrustedPeople
 #>
 
 [CmdletBinding()]
 param(
-    [string]$Subject = 'CN=MdBrowser Dev, O=MdBrowser, C=SE',
+    [string]$Subject = 'CN=MD Editor Dev, O=MD Editor, C=SE',
 
     [string]$OutputDirectory = (Join-Path $PSScriptRoot 'certs'),
 
@@ -59,7 +59,7 @@ param(
     [SecureString]$Password
 )
 
-function New-MdBrowserCert {
+function New-MdEditorCert {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)] [string]$Subject,
@@ -94,8 +94,8 @@ function New-MdBrowserCert {
 
     Write-Host "Certificate created. Thumbprint: $($cert.Thumbprint)" -ForegroundColor Green
 
-    $pfxPath = Join-Path $OutputDirectory 'MdBrowser.pfx'
-    $cerPath = Join-Path $OutputDirectory 'MdBrowser.cer'
+    $pfxPath = Join-Path $OutputDirectory 'md-editor.pfx'
+    $cerPath = Join-Path $OutputDirectory 'md-editor.cer'
 
     Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $Password | Out-Null
     Export-Certificate    -Cert $cert -FilePath $cerPath -Type CERT       | Out-Null
@@ -127,7 +127,7 @@ if (-not $Password) {
     }
 }
 
-$result = New-MdBrowserCert `
+$result = New-MdEditorCert `
     -Subject $Subject `
     -OutputDirectory $OutputDirectory `
     -ValidityYears $ValidityYears `
@@ -141,7 +141,7 @@ $nextSteps = @"
      Import-Certificate -FilePath '$($result.CerPath)' -CertStoreLocation Cert:\LocalMachine\TrustedPeople
 
   2. Sign the MSIX:
-     signtool sign /fd SHA256 /f '$($result.PfxPath)' /p <password> MdBrowser.msix
+     signtool sign /fd SHA256 /f '$($result.PfxPath)' /p <password> md-editor.msix
 
   3. Verify the Publisher in Package.appxmanifest matches:
      Identity Publisher = "$Subject"

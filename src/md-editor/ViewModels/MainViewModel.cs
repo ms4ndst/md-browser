@@ -4,7 +4,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 
-namespace MdBrowser.ViewModels;
+namespace MdEditor.ViewModels;
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {
@@ -23,12 +23,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
         NewFileCommand = new RelayCommand(_ => RequestNewFile?.Invoke());
         RefreshCommand = new RelayCommand(_ => RequestRefresh?.Invoke(), _ => !string.IsNullOrEmpty(RootPath));
         SaveCommand = new RelayCommand(_ => RequestSave?.Invoke(), _ => IsDirty);
+        ToggleExplorerCommand = new RelayCommand(_ => ExplorerVisible = !ExplorerVisible);
     }
 
     public ICommand OpenFolderCommand { get; }
     public ICommand NewFileCommand { get; }
     public ICommand RefreshCommand { get; }
     public ICommand SaveCommand { get; }
+    public ICommand ToggleExplorerCommand { get; }
 
     public Action? RequestOpenFolder { get; set; }
     public Action? RequestNewFile { get; set; }
@@ -79,6 +81,19 @@ public sealed class MainViewModel : INotifyPropertyChanged
             {
                 LoadRoot(RootPath);
             }
+        }
+    }
+
+    private bool _explorerVisible = true;
+    public bool ExplorerVisible
+    {
+        get => _explorerVisible;
+        set
+        {
+            if (_explorerVisible == value) return;
+            _explorerVisible = value;
+            OnPropertyChanged();
+            Services.LayoutSettings.SaveExplorerVisible(value);
         }
     }
 

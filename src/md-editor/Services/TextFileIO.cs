@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace MdBrowser.Services;
+namespace MdEditor.Services;
 
 public static class TextFileIO
 {

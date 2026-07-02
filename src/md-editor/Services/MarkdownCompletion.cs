@@ -6,7 +6,7 @@ using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Editing;
 
-namespace MdBrowser.Services;
+namespace MdEditor.Services;
 
 public sealed class MarkdownCompletionData : ICompletionData
 {

@@ -5,16 +5,16 @@
          xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
          IgnorableNamespaces="uap uap3 rescap">
 
-  <Identity Name="MdBrowser.MarkdownViewer"
-            Publisher="CN=MdBrowser Dev, O=MdBrowser, C=SE"
-            Version="1.5.0.0"
+  <Identity Name="md-editor.MarkdownEditor"
+            Publisher="CN=MD Editor Dev, O=MD Editor, C=SE"
+            Version="1.6.0.0"
             ProcessorArchitecture="x64" />
 
   <Properties>
-    <DisplayName>Markdown Viewer</DisplayName>
-    <PublisherDisplayName>MdBrowser</PublisherDisplayName>
+    <DisplayName>MD Editor</DisplayName>
+    <PublisherDisplayName>MD Editor</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
-    <Description>A clean, Catppuccin-themed Markdown file viewer with a folder tree.</Description>
+    <Description>A clean, Catppuccin-themed Markdown file editor with a folder tree.</Description>
   </Properties>
 
   <Dependencies>
@@ -27,17 +27,17 @@
 
   <Applications>
     <Application Id="App"
-                 Executable="MdBrowser.exe"
+                 Executable="md-editor.exe"
                  EntryPoint="Windows.FullTrustApplication">
-      <uap:VisualElements DisplayName="Markdown Viewer"
-                          Description="Browse Markdown files in a clean themed viewer."
+      <uap:VisualElements DisplayName="MD Editor"
+                          Description="Browse and edit Markdown files with a clean themed editor."
                           BackgroundColor="#1E1E2E"
                           Square150x150Logo="Assets\Square150x150Logo.png"
                           Square44x44Logo="Assets\Square44x44Logo.png">
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"
                          Square310x310Logo="Assets\LargeTile.png"
                          Square71x71Logo="Assets\SmallTile.png"
-                         ShortName="MD Viewer" />
+                         ShortName="MD Editor" />
         <uap:SplashScreen Image="Assets\SplashScreen.png" BackgroundColor="#1E1E2E" />
       </uap:VisualElements>
 
